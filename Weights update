@@ -1,1 +1,6 @@
-During training, we use backpropagation to compute the gradient of the loss with respect to the weights. This tells us how to adjust the weights to reduce the loss. After computing the gradients using .backward(), we update the weights using gradient descent (weights -= learning_rate * weights.grad), but we do this inside a with torch.no_grad() block to avoid tracking these operations in the computation graph. After updating the weights, we reset their gradients to zero using .grad.zero_() so that the next backward pass starts fresh and does not accumulate gradients from previous iterations. This process repeats for each epoch
+During training, we use backpropagation to compute the gradient of the loss with respect to the weights.
+This tells us how to adjust the weights to reduce the loss.
+After computing the gradients using .backward(), we update the weights using gradient descent (weights -= learning_rate * weights.grad),
+but we do this inside a with torch.no_grad() block to avoid tracking these operations in the computation graph.
+After updating the weights, we reset their gradients to zero using .grad.zero_() so that the next backward pass starts fresh 
+and does not accumulate gradients from previous iterations. This process repeats for each epoch
