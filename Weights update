@@ -66,3 +66,80 @@ Then on the next loss.backward() call:
 
 Use with torch.no_grad() whenever you're manually updating model parameters, so that PyTorch doesn't try to track those updates as part of the training computation graph. 
 This keeps memory usage low and ensures gradients are calculated correctly for the next pass.
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+🔍 Scenario Overview
+We have this:
+
+w = torch.tensor([1.0], requires_grad=True)
+We run:
+
+
+y_pred = w * x
+loss = (y_pred - y_target)**2
+loss.backward()
+This builds a computation graph like this:
+
+    w (requires_grad) ───┐
+                         │
+                       [* x]
+                         │
+                   y_pred ──┐
+                            ▼
+                    (y_pred - y_target)^2
+                            │
+                         loss
+✅ Case 1: Using torch.no_grad()
+We do:
+
+python
+Copy
+Edit
+with torch.no_grad():
+    w -= learning_rate * w.grad
+🔧 What happens:
+No computation graph is created for the weight update.
+
+PyTorch forgets about the gradient step; it's a plain number update, not part of future graph computations.
+
+✅ Clean graph. New training step starts fresh.
+
+✅ Visual:
+
+[Previous Graph] → [END]
+
+w updated without tracking.
+✔ No errors
+✔ Correct gradient in next .backward()
+✔ Low memory usage
+
+
+❌ Case 2: Not Using torch.no_grad()
+You do this instead:
+
+w = w - learning_rate * w.grad  # WITHOUT torch.no_grad()
+⚠️ What happens:
+PyTorch records this subtraction as part of the computation graph.
+
+In the next .backward() call, PyTorch tries to compute gradients through the weight update step — which doesn't make sense.
+
+❗Problems:
+Error like:
+RuntimeError: Trying to backward through the graph a second time...
+Or incorrect gradients, memory bloat.
+
+❌ Visual:
+    [Previous Graph]
+          ↓
+      w = w - lr * grad   ← gets added to the computation graph ❌
+          ↓
+      [New Graph based on old graph]
+
+This is like PyTorch trying to differentiate your optimizer, which is wrong.
+
+🧠 Final Mental Picture
+Think of torch.no_grad() as a temporary pause in PyTorch's "memory recording camera":
+
+🔴 Without it: PyTorch is recording everything — even stuff that should just be an update.
+
+🟢 With it: You say, “Hey, don’t record this part — just update the number.”
